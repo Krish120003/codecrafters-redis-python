@@ -10,11 +10,11 @@ def main():
     #
     server_socket = socket.create_server(("localhost", 6379), reuse_port=True)
 
-    while s := server_socket.accept():  # wait for client
-        print(s[0])
+    s = server_socket.accept()  # wait for client
+
+    while payload := s[0].recv(1024):  # recieve 1024 bytes
         s[0].send(b"+PONG\r\n")
 
 
 if __name__ == "__main__":
     main()
-x
