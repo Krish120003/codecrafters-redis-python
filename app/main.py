@@ -1,19 +1,35 @@
-# Uncomment this to pass the first stage
 import socket
+from threading import Thread
+
+RECV_BLOCK_SIZE = 1024
+
+
+def responder(socket):
+    while payload := socket.recv(RECV_BLOCK_SIZE):
+        socket.send(b"+PONG\r\n")
 
 
 def main():
     # You can use print statements as follows for debugging, they'll be visible when running tests.
     print("Logs from your program will appear here!")
 
-    # Uncomment this to pass the first stage
-    #
     server_socket = socket.create_server(("localhost", 6379), reuse_port=True)
 
-    s = server_socket.accept()  # wait for client
+    client_sockets = []
 
-    while payload := s[0].recv(1024):  # recieve 1024 bytes
-        s[0].send(b"+PONG\r\n")
+    # s = server_socket.accept()  # wait for client
+
+    # while payload := s[0].recv(1024):  # recieve 1024 bytes
+    #     s[0].send(b"+PONG\r\n")
+
+    while True:
+        conn = server_socket.accept()  # wait for client(s)
+        if conn:
+            print("Connecting to", conn)
+
+            # start a thread to deal with the connection
+            thread = Thread(target=responder, args=(conn[0],), daemon=True)
+            thread.start()
 
 
 if __name__ == "__main__":
