@@ -6,7 +6,14 @@ RECV_BLOCK_SIZE = 1024
 
 def responder(socket):
     while payload := socket.recv(RECV_BLOCK_SIZE):
-        socket.send(b"+PONG\r\n")
+
+        payload = payload.decode("utf-8").strip().split("\r\n")[1::][1::2]
+        command = payload[0]
+        print(command)
+        if command == "echo":
+            socket.send(f"+{' '.join(payload[1:])}\r\n".encode("utf-8"))
+        else:
+            socket.send(b"+PONG\r\n")
 
 
 def main():
