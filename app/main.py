@@ -1,9 +1,10 @@
+import time
 import socket
 from threading import Thread, Lock
 
 RECV_BLOCK_SIZE = 1024
 
-data = {}
+data = {}  # key, (value, expire_time)
 data_lock = Lock()
 
 
@@ -20,8 +21,16 @@ def responder(socket):
             data_lock.acquire()
             key = payload[1]
             value = payload[2]
-            data[key] = value
+
+            # check if there is an expire time
+            if len(payload) > 4:
+                lifetime = int(payload[4]) / 1000
+                expire_time = time.time() + lifetime
+                data[key] = (value, expire_time)
+            else:
+                data[key] = (value, None)
             # now we are done with the data, we can release the lock
+            print(data)
             data_lock.release()
             socket.send(f"+OK\r\n".encode("utf-8"))
         elif command == "get":
@@ -32,10 +41,17 @@ def responder(socket):
                 value = data[key]
                 # now we are done with the data, we can release the lock
                 data_lock.release()
-                socket.send(
-                    (f"${len(value)}\r\n" +
-                     value + "\r\n").encode("utf-8")
-                )
+
+                print(value[1], time.time())
+                # check if the key has expired
+                if value[1] and value[1] < time.time():
+                    socket.send(b"$-1\r\n")
+
+                else:
+                    socket.send(
+                        (f"${len(value[0])}\r\n" +
+                         value[0] + "\r\n").encode("utf-8")
+                    )
             else:
                 data_lock.release()
                 socket.send(b"$-1\r\n")
